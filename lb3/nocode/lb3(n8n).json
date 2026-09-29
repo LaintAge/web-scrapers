@@ -1,0 +1,319 @@
+{
+  "name": "lb3",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "9463d508-f0f4-4239-aef0-874e7bc601ba",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://dummyjson.com/posts",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "limit",
+              "value": "30"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "parameters": {
+                "parameters": [
+                  {
+                    "name": "skip",
+                    "value": "={{ $pageCount * 30 }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ $response.body.posts.length === 0 }}"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        224,
+        0
+      ],
+      "id": "840f0f62-4f79-4782-84ce-8f4a73ce2cb7",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "body.posts",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        672,
+        96
+      ],
+      "id": "b905bed9-54c0-410b-ba69-920992db2534",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "dcd28569-4679-47ae-b206-a6af608bd54e",
+              "name": "post_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "d35dba7f-90ef-4afe-9ed5-9b7561a0e202",
+              "name": "title_clean",
+              "value": "={{ $json.title.replace(/[^a-zA-Z0-9 ]/g, '') }}",
+              "type": "string"
+            },
+            {
+              "id": "7d9ae2f6-72b9-4c3c-9f62-b60c92c003d9",
+              "name": "likes",
+              "value": "={{ $json.reactions.likes }}",
+              "type": "string"
+            },
+            {
+              "id": "3942069a-11f0-44b8-a0f3-cb42a8091a33",
+              "name": "popularity_score",
+              "value": "={{ $json.reactions.likes - $json.reactions.dislikes }}",
+              "type": "string"
+            },
+            {
+              "id": "fe6bad76-9c28-46f8-ba88-fdec9fef6ade",
+              "name": "collected_at",
+              "value": "={{ new Date().toISOString() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        896,
+        96
+      ],
+      "id": "e9c6589a-2d92-4096-8874-592d4b4afb4b",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "ebe6e8ce-981d-4372-868b-0feb20523187",
+              "leftValue": "={{ $json.statusCode }}",
+              "rightValue": 200,
+              "operator": {
+                "type": "number",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        448,
+        0
+      ],
+      "id": "06da4ec8-0e71-49df-b014-9df0533c2421",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "options": {
+          "fileName": "posts_export.csv",
+          "headerRow": true
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        1120,
+        96
+      ],
+      "id": "1b462aa7-8c54-4b34-9745-43265248de25",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "/files/posts_export.csv",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        1344,
+        96
+      ],
+      "id": "29883fe0-136e-4ef0-a5b1-3a57afa968b9",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "errorMessage": "=const status = $json?.statusCode;\n\nconsole.log(`[ERROR] Статус: ${status}`);"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        800,
+        -240
+      ],
+      "id": "dba60975-7167-4fa2-a751-96c59bad223a",
+      "name": "Stop and Error"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const status = $json?.status;\nconst url = $json?.url;\n\nconsole.log(`[ERROR] Статус: ${status}, URL: ${url}`);\nreturn { json: { error: true, status, url } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        608,
+        -144
+      ],
+      "id": "a4970eb3-aeb5-4b4f-a4ad-56c8c924c2f1",
+      "name": "Code in JavaScript"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Stop and Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "1f2e4f1f-1ae9-4d2e-8510-79344e5ec06c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "300e9d17519dcf9ad74a16c2f287755b1ba20ac7c961ba6af568e6d0dfe00f26"
+  },
+  "nodeGroups": [],
+  "id": "VJGK0T1kbc9cr6Rq",
+  "tags": []
+}
