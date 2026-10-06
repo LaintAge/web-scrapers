@@ -1,0 +1,6 @@
+playwright>=1.44.0
+requests>=2.31.0
+beautifulsoup4>=4.12.3
+pandas>=2.2.0
+psutil>=5.9.8
+lxml>=5.1.0
